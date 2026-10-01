@@ -8,7 +8,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 import warnings
 from .const import DOMAIN
-from . import frontend
+# from . import frontend  # DISABLED: proprietary frontend card + DVC license server
 
 # Suppress python-miio FutureWarning on Python 3.13
 warnings.filterwarnings(
@@ -40,8 +40,8 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Dreame Vacuum integration."""
-    if hass.config_entries.async_entries(DOMAIN):
-        await frontend.setup(hass)
+    # if hass.config_entries.async_entries(DOMAIN):
+    #     await frontend.setup(hass)  # DISABLED: proprietary frontend card + DVC license server
     return True
 
 
@@ -99,7 +99,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle removal of a Dreame Vacuum config entry."""
-    await frontend.remove(hass, entry)
+    # await frontend.remove(hass, entry)  # DISABLED: proprietary frontend card + DVC license server
+    return
 
 
 async def update_listener(hass: HomeAssistant, config_entry: ConfigEntry) -> None:

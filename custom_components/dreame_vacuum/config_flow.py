@@ -717,10 +717,11 @@ class DreameVacuumFlowHandler(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="dvc",
             data_schema=vol.Schema({vol.Optional(CONF_DVC_KEY): str}),
-            description_placeholders={
-                "text": f'<center><a href="https://dvc.tasshack.com"><img src="data:image/png;base64,{DVC}"/></a></center>',
-                "url": "https://dvc.tasshack.com/get-dvc#get",
-            },
+            # DISABLED: proprietary DVC paywall marketing banner
+            # description_placeholders={
+            #     "text": f'<center><a href="https://dvc.tasshack.com"><img src="data:image/png;base64,{DVC}"/></a></center>',
+            #     "url": "https://dvc.tasshack.com/get-dvc#get",
+            # },
             errors={},
         )
 

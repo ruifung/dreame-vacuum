@@ -134,22 +134,23 @@ class DreameVacuumDataUpdateCoordinator(DataUpdateCoordinator[DreameVacuumDevice
                         options[CONF_HIDDEN_MAP_OBJECTS].append(key)
                 del options[CONF_MAP_OBJECTS]
 
+            # DISABLED: proprietary DVC paywall notification banner
             # Version check to ensure each user only sees dvc notification once
-            if (not entry.options.get(CONF_DVC_KEY)
-                and (
-                    om := re.match(r"v?(\d+)\.(\d+)\.(\d+)([a-zA-Z].*)?", entry.options.get(CONF_VERSION) or "v0.0.0")
-                )
-                and (nm := re.match(r"v?(\d+)\.(\d+)\.(\d+)([a-zA-Z].*)?", VERSION))
-                and (int(om[1]), int(om[2]), int(om[3]), 0 if om[4] else 1)
-                < (2, 0, 0, 1)
-                <= (int(nm[1]), int(nm[2]), int(nm[3]), 0 if nm[4] else 1)
-            ):
-                persistent_notification.create(
-                    hass=hass,
-                    message=f'### Interface of Dreame Vacuum<center><a href="https://dreame-vacuum-card.tasshack.com/getting-started/installation-and-usage#adding-the-card-to-your-dashboard"><img src="data:image/png;base64,{DVC}"/></a></center>\nDreame Vacuum Card have been added to custom cards registry.',
-                    title="Dreame Vacuum Card",
-                    notification_id=f"{DOMAIN}_dvc",
-                )
+            # if (not entry.options.get(CONF_DVC_KEY)
+            #     and (
+            #         om := re.match(r"v?(\d+)\.(\d+)\.(\d+)([a-zA-Z].*)?", entry.options.get(CONF_VERSION) or "v0.0.0")
+            #     )
+            #     and (nm := re.match(r"v?(\d+)\.(\d+)\.(\d+)([a-zA-Z].*)?", VERSION))
+            #     and (int(om[1]), int(om[2]), int(om[3]), 0 if om[4] else 1)
+            #     < (2, 0, 0, 1)
+            #     <= (int(nm[1]), int(nm[2]), int(nm[3]), 0 if nm[4] else 1)
+            # ):
+            #     persistent_notification.create(
+            #         hass=hass,
+            #         message=f'### Interface of Dreame Vacuum<center><a href="https://dreame-vacuum-card.tasshack.com/getting-started/installation-and-usage#adding-the-card-to-your-dashboard"><img src="data:image/png;base64,{DVC}"/></a></center>\nDreame Vacuum Card have been added to custom cards registry.',
+            #         title="Dreame Vacuum Card",
+            #         notification_id=f"{DOMAIN}_dvc",
+            #     )
             options[CONF_VERSION] = VERSION
             hass.config_entries.async_update_entry(entry=entry, options=options)
 
