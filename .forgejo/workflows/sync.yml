@@ -1,0 +1,81 @@
+name: Sync with upstream
+
+on:
+  schedule:
+    # Daily at 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    # Use a real Ubuntu image rather than the default bare docker runner. The
+    # default image lacks a Python 3.12 toolchain, which the integration's
+    # PEP 701 f-strings and the syntax check require.
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout fork (full history)
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: master
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Python 3.14
+        # Upstream uses PEP 701 nested-quote f-strings (e.g. f"{device.get("model")}"),
+        # which only parse on Python 3.12+. Pin a recent interpreter for the patch
+        # script and the syntax check.
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.14'
+
+      - name: Fetch upstream + pipeline branch
+        run: |
+          git remote add upstream https://github.com/Tasshack/dreame-vacuum.git
+          git fetch --no-tags upstream master
+          # Fetch into a local branch so `git cherry-pick fork-sync-pipeline`
+          # resolves (fetch into FETCH_HEAD alone would not create the ref).
+          git fetch --no-tags origin fork-sync-pipeline:fork-sync-pipeline
+          echo "UPSTREAM_SHA=$(git rev-parse upstream/master)" >> "$GITHUB_ENV"
+
+      - name: Rebase master onto upstream (discard stale fork history)
+        run: |
+          git reset --hard upstream/master
+
+      - name: Cherry-pick pipeline commit (brings in .forgejo)
+        run: |
+          git cherry-pick fork-sync-pipeline
+
+      - name: Apply fork deactivation patches
+        run: python3 .forgejo/sync-patch.py
+
+      - name: Verify patched files have no syntax errors
+        run: |
+          # Byte-compile every Python file in the integration. compileall fails
+          # (non-zero exit) on any syntax error, aborting the sync before it can
+          # push a broken tree. It does not import modules, so missing runtime
+          # dependencies (homeassistant, Crypto, ...) do not matter here.
+          python3 -m compileall -q custom_components/dreame_vacuum
+          # compileall creates __pycache__ dirs; remove them so they never end
+          # up in a commit (the commit step also only stages tracked files).
+          find custom_components -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+      - name: Commit and push
+        run: |
+          git add -u
+          # Skip if the resulting tree matches what is already on origin/master.
+          new_tree="$(git write-tree)"
+          old_tree="$(git rev-parse origin/master^{tree} 2>/dev/null || echo none)"
+          if [ "$new_tree" = "$old_tree" ]; then
+            echo "Already up to date with origin/master; nothing to push."
+            exit 0
+          fi
+          git commit -m "chore: remove obfuscated proprietary crap"
+          git push origin master --force-with-lease
